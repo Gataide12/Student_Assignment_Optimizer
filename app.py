@@ -35,7 +35,8 @@ def preparar_dados(arquivo, numero_salas):
 
     if 'id' in df.columns and 'ID' not in df.columns:
       df.rename(columns={'id': 'ID'}, inplace=True)
-
+    df['desempenho'] = pd.to_numeric(df['desempenho'], errors='coerce')
+    df['comportamento'] = pd.to_numeric(df['comportamento'], errors='coerce')
     if 'ID' not in df.columns:
       st.error(f"A coluna 'ID' não foi encontrada no arquivo CSV. As colunas disponíveis são: {df.columns.tolist()}. Por favor, verifique se o nome da coluna está correto ou se o arquivo possui um ID.")
       return None, None, None, None, None, None
@@ -706,10 +707,7 @@ def genetic_algorithm(populacao, max_iterations, numero_salas, IDs, amizades_id_
     alunos_data_dict,
     total_alunos
 )
-    historico.append({
-            'Iteração': geracao + 1,
-            'Score': melhor_scoreGA
-        })
+  
 
     while len(nova_pop) < len(populacao):
       indice_pai1 = torneio(populacao, lista_score, tamanho_torneio)
@@ -741,6 +739,11 @@ def genetic_algorithm(populacao, max_iterations, numero_salas, IDs, amizades_id_
       if score_ind > melhor_scoreGA:
         melhor_scoreGA = score_ind
         melhor_solucaoGA = copy.deepcopy(current_salas)
+
+    historico.append({
+            'Iteração': geracao + 1,
+            'Score': melhor_scoreGA
+        })   
     populacao = nova_pop
 
   df_historico = pd.DataFrame(historico)
@@ -752,7 +755,6 @@ def genetic_algorithm(populacao, max_iterations, numero_salas, IDs, amizades_id_
 st.title("**Otimizador de salas escolares**")
 st.write("Começe colocando um arquivo no formato CSV com as informações dos estudantes")
 arquivo = st.file_uploader("Coloque seu arquivo CSV aqui", type="csv")
-# Barra de segurança das colunas
 if arquivo is not None:
     try:
         arquivo.seek(0)
@@ -806,7 +808,7 @@ numero_salas = st.number_input(
 max_iterations = st.slider("Máximo de iterações:", min_value=100, max_value=1000000, value=1000)
 st.write("(*Quanto mais iterações forem permitidas, maior será a qualidade da solução, porém mais tempo levará. Muitas iterações saturam o processo, rendendo menos score por iteração*)")
 
-quer_grafico = st.checkbox("Deseja gerar os gráficos de desempenho da última execução?")
+quer_grafico = st.checkbox("Deseja gerar os gráficos de desempenho da última execução?", key="quer_grafico")
 
 
 if metodo == "Algoritmo Génetico":
@@ -818,7 +820,6 @@ else:
 
 
 if arquivo and st.button("Otimizar"):
-  with st.spinner("Processando dados e otimizando..."):
     salas, amizades, inimizades, dados_dict, IDs, id_para_nome = preparar_dados(arquivo, numero_salas)
 
     if salas is None:
@@ -847,9 +848,40 @@ if arquivo and st.button("Otimizar"):
         st.session_state.solucao_rodada = solucao_final
         st.session_state.id_para_nome_rodada = id_para_nome
         st.session_state.metodo_utilizado = metodo
+        st.session_state.amizades_rodada = amizades
+        st.session_state.inimizades_rodada = inimizades
+        st.session_state.dados_dict_rodada = dados_dict
 
 
         st.success(f"Concluído! Score: {score:.2f}")
+def dados_gerais_salas(salas, amizades_id_map, inimizades_id_map, alunos_data_dict):
+    dados = []
+
+    for numero_sala, sala_ids in salas.items():
+        M = 0
+        F = 0
+
+        for aluno_id in sala_ids:
+            if aluno_id in alunos_data_dict:
+                sexo = alunos_data_dict[aluno_id]["sexo"]
+
+                if sexo == "M":
+                    M += 1
+                elif sexo == "F":
+                    F += 1
+
+        dados.append({
+            "Sala": numero_sala,
+            "Nº de alunos": len(sala_ids),
+            "Masculino": M,
+            "Feminino": F,
+            "Pares de amizades": aval_amizades(sala_ids, amizades_id_map),
+            "Pares de inimizades": aval_inimizades(sala_ids, inimizades_id_map),
+            "Média de notas": round(aval_notas(sala_ids, alunos_data_dict), 2),
+            "Média de comportamento": round(aval_comportamento(sala_ids, alunos_data_dict), 2)
+        })
+
+    return pd.DataFrame(dados)
 
 if 'solucao_rodada' in st.session_state:
     st.subheader("Solução Final:")
@@ -864,6 +896,19 @@ if 'solucao_rodada' in st.session_state:
         ]
 
         st.write(f"**Sala {room_num}:** {', '.join(student_names)}")
+
+
+
+    st.subheader("Estatísticas das salas")
+
+    df_salas = dados_gerais_salas(
+       solucao,
+       st.session_state.amizades_rodada,
+       st.session_state.inimizades_rodada,
+       st.session_state.dados_dict_rodada
+   )
+
+    st.dataframe(df_salas, use_container_width=True)
 
 #Gráficos com Matplotlib
 if quer_grafico and 'historico_rodada' in st.session_state and st.session_state.historico_rodada is not None:
