@@ -809,6 +809,13 @@ max_iterations = st.slider("Máximo de iterações:", min_value=100, max_value=1
 st.write("(*Quanto mais iterações forem permitidas, maior será a qualidade da solução, porém mais tempo levará. Muitas iterações saturam o processo, rendendo menos score por iteração*)")
 
 quer_grafico = st.checkbox("Deseja gerar os gráficos de desempenho da última execução?", key="quer_grafico")
+numero_execucoes = st.number_input(
+    "Número de execuções:",
+    min_value=1,
+    max_value=100,
+    value=10,
+    step=1
+)
 
 
 if metodo == "Algoritmo Génetico":
@@ -820,122 +827,177 @@ else:
 
 
 if arquivo and st.button("Otimizar"):
-    salas, amizades, inimizades, dados_dict, IDs, id_para_nome = preparar_dados(arquivo, numero_salas)
+    resultados = [] 
+    historicos = []
+    solucoes = []
 
-    if salas is None:
-        st.error("Não foi possível processar os dados do arquivo CSV. Por favor, verifique o arquivo e tente novamente.")
-    else:
-        populacao = None
-        if metodo == "Algoritmo Génetico":
-          populacao = gerar_populacao(tamanho_populacao, IDs, numero_salas)
+    for execucao in range(numero_execucoes):
 
-        score, solucao_final, df_historico = otimizar(
-            metodo,
-            salas,
-            amizades,
-            inimizades,
-            dados_dict,
-            IDs,
-            numero_salas,
-            max_iterations,
-            populacao,
-            taxa_mutacao
-        )
+      st.write(f"Executando {execucao + 1}/{numero_execucoes}...")
+      salas, amizades, inimizades, dados_dict, IDs, id_para_nome = preparar_dados(arquivo, numero_salas)
 
-        #Salva os dados da última execução
-        st.session_state.historico_rodada = df_historico
-        st.session_state.score_rodada = score
-        st.session_state.solucao_rodada = solucao_final
-        st.session_state.id_para_nome_rodada = id_para_nome
-        st.session_state.metodo_utilizado = metodo
-        st.session_state.amizades_rodada = amizades
-        st.session_state.inimizades_rodada = inimizades
-        st.session_state.dados_dict_rodada = dados_dict
+      if salas is None:
+          st.error("Não foi possível processar os dados do arquivo CSV. Por favor, verifique o arquivo e tente novamente.")
+      else:
+          populacao = None
+          if metodo == "Algoritmo Génetico":
+            populacao = gerar_populacao(tamanho_populacao, IDs, numero_salas)
 
+             if arquivo and st.button("Otimizar"):
 
-        st.success(f"Concluído! Score: {score:.2f}")
-def dados_gerais_salas(salas, amizades_id_map, inimizades_id_map, alunos_data_dict):
-    dados = []
+                 resultados = []
+                 historicos = []
+                 solucoes = []
 
-    for numero_sala, sala_ids in salas.items():
-        M = 0
-        F = 0
+                 salas, amizades, inimizades, dados_dict, IDs, id_para_nome = preparar_dados(
+                        arquivo,
+                        numero_salas
+                     )               
 
-        for aluno_id in sala_ids:
-            if aluno_id in alunos_data_dict:
-                sexo = alunos_data_dict[aluno_id]["sexo"]
+                 for execucao in range(numero_execucoes):
 
-                if sexo == "M":
-                    M += 1
-                elif sexo == "F":
-                    F += 1
+                     st.write(f"Executando {execucao + 1}/{numero_execucoes}...")
 
-        dados.append({
-            "Sala": numero_sala,
-            "Nº de alunos": len(sala_ids),
-            "Masculino": M,
-            "Feminino": F,
-            "Pares de amizades": aval_amizades(sala_ids, amizades_id_map),
-            "Pares de inimizades": aval_inimizades(sala_ids, inimizades_id_map),
-            "Média de notas": round(aval_notas(sala_ids, alunos_data_dict), 2),
-            "Média de comportamento": round(aval_comportamento(sala_ids, alunos_data_dict), 2)
-        })
+                  
 
-    return pd.DataFrame(dados)
+                     if salas is None:
+                         st.error(
+                            "Não foi possível processar os dados do arquivo. "
+                            "Verifique o arquivo e tente novamente."
+                         )
+                         break
 
-if 'solucao_rodada' in st.session_state:
-    st.subheader("Solução Final:")
+                     populacao = None
 
-    solucao = st.session_state.solucao_rodada
-    id_para_nome = st.session_state.id_para_nome_rodada
+                     if metodo == "Algoritmo Génetico":
+                         populacao = gerar_populacao(
+                             tamanho_populacao,
+                             IDs,
+                             numero_salas
+                         )
 
-    for room_num, student_ids in solucao.items():
-        student_names = [
-           id_para_nome.get(sid, f"ID Desconhecido ({sid})")
-                   for sid in student_ids
-        ]
+                     score, solucao_final, df_historico = otimizar(
+                         metodo,
+                         salas,
+                         amizades,
+                         inimizades,
+                         dados_dict,
+                         IDs,
+                         numero_salas,
+                         max_iterations,
+                         populacao,
+                         taxa_mutacao
+                    )
 
-        st.write(f"**Sala {room_num}:** {', '.join(student_names)}")
+                    resultados.append(score)
+                    historicos.append(df_historico)
+                    solucoes.append(solucao_final)
 
+                 if resultados:
 
+                     import numpy as np
 
-    st.subheader("Estatísticas das salas")
+                     media_score = np.mean(resultados)
+                     desvio_score = np.std(resultados)
 
-    df_salas = dados_gerais_salas(
-       solucao,
-       st.session_state.amizades_rodada,
-       st.session_state.inimizades_rodada,
-       st.session_state.dados_dict_rodada
-   )
+                     melhor_indice = resultados.index(max(resultados))
 
-    st.dataframe(df_salas, use_container_width=True)
+                     melhor_score = resultados[melhor_indice]
+                     melhor_solucao = solucoes[melhor_indice]
+                     melhor_historico = historicos[melhor_indice]
 
-#Gráficos com Matplotlib
-if quer_grafico and 'historico_rodada' in st.session_state and st.session_state.historico_rodada is not None:
-  st.markdown("---")
+                     st.success(
+                         f"{len(resultados)} execuções concluídas!"
+                     )
 
-  df_atual = st.session_state.historico_rodada
-  metodo_atual = st.session_state.metodo_utilizado
+                   st.subheader("Resultados das execuções")
 
-  st.subheader("Configurações do Gráfico")
-
-  colunas_disponiveis = list(df_atual.columns)
-
-  eixo_x = st.selectbox("Escolha a variável do eixo X:", colunas_disponiveis, index=0)
-  eixo_y = st.selectbox("Escolha a variável do eixo Y:", colunas_disponiveis, index=1)
-  cor_linha = st.color_picker("Escolha a cor da linha:", "#00CC96")
-
-  fig, ax = plt.subplots(figsize=(8, 4))
-
-  ax.plot(df_atual[eixo_x], df_atual[eixo_y], color=cor_linha, linewidth=2, label="Evolução")
-  ax.set_title(f"Evolução do método {metodo_atual} ({eixo_x} vs {eixo_y})", fontsize=11, fontweight='bold', pad=10)
-  ax.set_xlabel(eixo_x, fontsize=9, fontweight='semibold')
-  ax.set_ylabel(eixo_y, fontsize=9, fontweight='semibold')
-  ax.grid(True, linestyle='--', alpha=0.3)
-  ax.spines['top'].set_visible(False)
-  ax.spines['right'].set_visible(False)
-  ax.legend(loc="lower right", fontsize=8)
-
-  st.pyplot(fig)
+                   st.write(f"**Score médio:** {media_score:.2f}")
+                   st.write(f"**Desvio padrão:** {desvio_score:.2f}")
+                   st.write(f"**Melhor score:** {melhor_score:.2f}")
+                   st.write(f"**Pior score:** {min(resultados):.2f}")
 
 
+                   st.subheader("Melhor solução encontrada")
+
+                   st.write(f"**Score:** {melhor_score:.2f}")
+
+                   for numero_sala, sala in enumerate(melhor_solucao, start=1):
+
+                       st.markdown(f"### Sala {numero_sala}")
+
+                      nomes = [
+                           id_para_nome.get(aluno_id, str(aluno_id))
+                          for aluno_id in sala
+                      ]
+
+                      st.write(", ".join(nomes))
+
+                      st.session_state.historico_rodada = melhor_historico
+                      st.session_state.score_rodada = melhor_score
+                      st.session_state.solucao_rodada = melhor_solucao
+                      st.session_state.id_para_nome_rodada = id_para_nome
+                      st.session_state.metodo_utilizado = metodo
+                      st.session_state.amizades_rodada = amizades
+                      st.session_state.inimizades_rodada = inimizades
+                      st.session_state.dados_dict_rodada = dados_dict
+
+                      st.success(
+                          f"Melhor execução: Score = {melhor_score:.2f}"
+                      )
+
+            if historicos:
+
+                  todos_historicos = pd.concat(
+                  historicos,
+                  ignore_index=True
+              )
+
+    
+                 media_por_iteracao = (
+                 todos_historicos
+                 .groupby("Iteração")["Score"]
+                 .agg(["mean", "std"])
+                 .reset_index()
+              )
+
+                 st.subheader("Evolução média do algoritmo")
+
+                 fig, ax = plt.subplots(figsize=(9, 5))
+
+                 ax.plot(
+                     media_por_iteracao["Iteração"],
+                     media_por_iteracao["mean"],
+                     linewidth=2,
+                     label="Score médio"
+              )
+
+                 ax.fill_between(
+                     media_por_iteracao["Iteração"],
+                     media_por_iteracao["mean"] -
+                     media_por_iteracao["std"].fillna(0),
+                     media_por_iteracao["mean"] +
+                     media_por_iteracao["std"].fillna(0),
+                     alpha=0.2,
+                     label="± 1 desvio padrão"
+              )
+
+                ax.set_xlabel("Iteração")
+                ax.set_ylabel("Score")
+                ax.set_title(
+                    f"Evolução média — {metodo}"
+              )
+
+               ax.grid(
+                   True,
+                   linestyle="--",
+                   alpha=0.3
+             )
+
+              ax.legend()
+
+              fig.tight_layout()
+
+              st.pyplot(fig)
+
+              plt.close(fig)
