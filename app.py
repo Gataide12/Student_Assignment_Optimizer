@@ -805,7 +805,7 @@ numero_salas = st.number_input(
 )
 
 
-max_iterations = st.slider("Máximo de iterações:", min_value=100, max_value=1000000, value=1000)
+max_iterations = st.slider("Máximo de iterações:", min_value=100, max_value=1000000, value=100000)
 st.write("(*Quanto mais iterações forem permitidas, maior será a qualidade da solução, porém mais tempo levará. Muitas iterações saturam o processo, rendendo menos score por iteração*)")
 
 quer_grafico = st.checkbox("Deseja gerar os gráficos de desempenho da última execução?", key="quer_grafico")
