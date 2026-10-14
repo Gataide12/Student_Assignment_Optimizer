@@ -55,7 +55,6 @@ def preparar_dados(arquivo, numero_salas):
             nome_to_id_map[nome] = id_num
             id_para_nome[id_num] = nome
 
-
             # Geração de salas
         IDs = list(id_para_nome.keys())
         salas = gerar_salas(IDs, numero_salas)
@@ -108,7 +107,6 @@ def preparar_dados(arquivo, numero_salas):
                     id_inimigo = nome_para_id.get(inimigo_nome)
                     if id_inimigo is not None:
                         inimizades_id[id_aluno].append(id_inimigo)
-
 
         df_indexed = df.set_index('ID')
 
@@ -330,7 +328,6 @@ def gerar_vizinho(salas_atuais, alunos_data_dict):
         vizinho[sala_esc2_key].append(aluno_id1)
         vizinho[sala_esc3_key].append(aluno_id2)
 
-
     return vizinho
 
 def gerar_vizinhoADP(salas_atuais, alunos_data_dict, T):
@@ -403,7 +400,6 @@ def gerar_vizinhoADP(salas_atuais, alunos_data_dict, T):
 
             vizinho[sala_esc1_key].extend(alunosB)
             vizinho[sala_esc2_key].extend(alunosA)
-
 
             return vizinho
         else:
@@ -485,10 +481,10 @@ def hill_climbing(inicial_salas, amizades_id_map, inimizades_id_map, alunos_data
 
         tempo_decorrido = time.time() - tempo_inicial
         historico.append({
-          'Iteração': i + 1,
-          'Score': maior_scoreHC,
-          'Tempo Acumulado': tempo_decorrido
-      })
+            'Iteração': i + 1,
+            'Score': maior_scoreHC,
+            'Tempo Acumulado': tempo_decorrido
+        })
 
     df_historico = pd.DataFrame(historico)
     return maior_scoreHC, melhor_solucaoHC, df_historico
@@ -529,11 +525,11 @@ def simulated_annealing(inicial_salas, amizades_id_map, inimizades_id_map, aluno
 
         tempo_decorrido = time.time() - tempo_inicial
         historico.append({
-          'Iteração': i + 1,
-          'Score': maior_scoreSA,
-          'Temperatura': T,
-          'Tempo Acumulado': tempo_decorrido
-      })
+            'Iteração': i + 1,
+            'Score': maior_scoreSA,
+            'Temperatura': T,
+            'Tempo Acumulado': tempo_decorrido
+        })
 
         T = T * 0.9998849
         if T < 1e-10:
@@ -582,11 +578,11 @@ def simulated_annealingADP(inicial_salas, amizades_id_map, inimizades_id_map, al
         tempo_decorrido = time.time() - tempo_inicial
 
         historico.append({
-          'Iteração': i + 1,
-          'Score': maior_scoreSAADP,
-          'Temperatura': T,
-          'Tempo Acumulado (s)': tempo_decorrido
-      })
+            'Iteração': i + 1,
+            'Score': maior_scoreSAADP,
+            'Temperatura': T,
+            'Tempo Acumulado (s)': tempo_decorrido
+        })
 
         T = T * 0.9998849
         if T < 1e-10:
@@ -699,15 +695,14 @@ def genetic_algorithm(populacao, max_iterations, numero_salas, IDs, amizades_id_
 
         nova_pop = []
         lista_score = avaliar_pop(
-    populacao,
-    IDs,
-    numero_salas,
-    amizades_id_map,
-    inimizades_id_map,
-    alunos_data_dict,
-    total_alunos
-)
-
+            populacao,
+            IDs,
+            numero_salas,
+            amizades_id_map,
+            inimizades_id_map,
+            alunos_data_dict,
+            total_alunos
+        )
 
         while len(nova_pop) < len(populacao):
             indice_pai1 = torneio(populacao, lista_score, tamanho_torneio)
@@ -729,13 +724,13 @@ def genetic_algorithm(populacao, max_iterations, numero_salas, IDs, amizades_id_
         for individuo in nova_pop:
             current_salas = list_dict(individuo, IDs, numero_salas)
             score_ind = aval_tot(
-      current_salas,
-      amizades_id_map,
-      inimizades_id_map,
-      alunos_data_dict,
-      total_alunos,
-      numero_salas
-     )
+        current_salas,
+        amizades_id_map,
+        inimizades_id_map,
+        alunos_data_dict,
+        total_alunos,
+        numero_salas
+    )
             if score_ind > melhor_scoreGA:
                 melhor_scoreGA = score_ind
                 melhor_solucaoGA = copy.deepcopy(current_salas)
@@ -743,17 +738,16 @@ def genetic_algorithm(populacao, max_iterations, numero_salas, IDs, amizades_id_
         historico.append({
             'Iteração': geracao + 1,
             'Score': melhor_scoreGA
-        })   
+        })
         populacao = nova_pop
 
     df_historico = pd.DataFrame(historico)
 
     return melhor_scoreGA, melhor_solucaoGA, df_historico
 
-
 def calcular_indicadores_solucao(salas, amizades_id_map, inimizades_id_map,
-                                 alunos_data_dict):
-   
+                                alunos_data_dict):
+
     import pandas as pd
 
     dados_salas = []
@@ -794,7 +788,7 @@ def calcular_indicadores_solucao(salas, amizades_id_map, inimizades_id_map,
         media_desempenho = (sum(notas) / len(notas) if notas else None)
 
         media_comportamento = (sum(comportamentos) /
-                               len(comportamentos) if comportamentos else None)
+                                len(comportamentos) if comportamentos else None)
 
         total_genero = n_f + n_m
 
@@ -844,8 +838,6 @@ def calcular_indicadores_solucao(salas, amizades_id_map, inimizades_id_map,
     }
 
     return resumo, df_salas
-
-
 
     #Streamlit
 
@@ -901,7 +893,6 @@ numero_salas = st.number_input(
     step=1
 )
 
-
 max_iterations = st.slider("Máximo de iterações:", min_value=100, max_value=1000000, value=100000)
 st.write("(*Quanto mais iterações forem permitidas, maior será a qualidade da solução, porém mais tempo levará. Muitas iterações saturam o processo, rendendo menos score por iteração*)")
 
@@ -914,8 +905,6 @@ numero_execucoes = st.number_input(
     step=1
 )
 
-
-
 if metodo == "Algoritmo Génetico":
     tamanho_populacao = st.slider("Tamanho da população:", min_value=10, max_value=200, value=50)
     taxa_mutacao = st.slider("Taxa de mutação:", min_value=0.01, max_value=0.5, value=0.05, step=0.01)
@@ -923,14 +912,13 @@ else:
     tamanho_populacao = None
     taxa_mutacao = None
 
-
 if arquivo and st.button("Otimizar"):
 
     resultados = []
     historicos = []
     solucoes = []
     indicadores_execucoes = []
-    
+
     salas, amizades, inimizades, dados_dict, IDs, id_para_nome = preparar_dados(
         arquivo,
         numero_salas
@@ -989,11 +977,8 @@ if arquivo and st.button("Otimizar"):
                 inimizades,
                 dados_dict
             )
-
-indicadores_execucoes.append(indicadores)
-        
-
-    if resultados:
+            indicadores_execucoes.append(indicadores)
+        if resultados:
 
             import numpy as np
 
@@ -1032,8 +1017,8 @@ indicadores_execucoes.append(indicadores)
             st.subheader("Indicadores por sala — melhor solução")
 
             st.dataframe(df_salas_melhor.round(2),
-                         use_container_width=True,
-                         hide_index=True)
+                        use_container_width=True,
+                        hide_index=True)
 
             st.subheader("Estatísticas dos indicadores entre execuções")
 
@@ -1052,9 +1037,8 @@ indicadores_execucoes.append(indicadores)
             df_estatisticas = df_estatisticas.round(2)
 
             st.dataframe(df_estatisticas.reset_index(names="Indicador"),
-                         use_container_width=True,
-                         hide_index=True)
-
+                        use_container_width=True,
+                        hide_index=True)
 
             st.success(
                 f"{len(resultados)} execuções concluídas!"
