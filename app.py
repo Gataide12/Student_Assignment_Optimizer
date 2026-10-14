@@ -750,6 +750,103 @@ def genetic_algorithm(populacao, max_iterations, numero_salas, IDs, amizades_id_
 
     return melhor_scoreGA, melhor_solucaoGA, df_historico
 
+
+def calcular_indicadores_solucao(salas, amizades_id_map, inimizades_id_map,
+                                 alunos_data_dict):
+   
+    import pandas as pd
+
+    dados_salas = []
+
+    for numero_sala, alunos in salas.items():
+        n_alunos = len(alunos)
+
+        n_amizades = aval_amizades(alunos, amizades_id_map)
+        n_inimizades = aval_inimizades(alunos, inimizades_id_map)
+
+        notas = []
+        comportamentos = []
+
+        n_f = 0
+        n_m = 0
+
+        for aluno_id in alunos:
+            dados = alunos_data_dict.get(aluno_id, {})
+
+            nota = dados.get("desempenho")
+            comportamento = dados.get("comportamento")
+            sexo = dados.get("sexo")
+
+            if nota is not None and pd.notna(nota):
+                notas.append(float(nota))
+
+            if comportamento is not None and pd.notna(comportamento):
+                comportamentos.append(float(comportamento))
+
+            if isinstance(sexo, str):
+                sexo = sexo.strip().upper()
+
+                if sexo == "F":
+                    n_f += 1
+                elif sexo == "M":
+                    n_m += 1
+
+        media_desempenho = (sum(notas) / len(notas) if notas else None)
+
+        media_comportamento = (sum(comportamentos) /
+                               len(comportamentos) if comportamentos else None)
+
+        total_genero = n_f + n_m
+
+        proporcao_f = (n_f / total_genero if total_genero > 0 else None)
+
+        proporcao_m = (n_m / total_genero if total_genero > 0 else None)
+
+        dados_salas.append({
+            "Sala":
+            numero_sala,
+            "Nº de alunos":
+            n_alunos,
+            "Pares de amizade":
+            n_amizades,
+            "Média de desempenho":
+            media_desempenho,
+            "Média de comportamento":
+            media_comportamento,
+            "Pares de inimizade":
+            n_inimizades,
+            "Proporção F (%)":
+            (proporcao_f * 100 if proporcao_f is not None else None),
+            "Proporção M (%)":
+            (proporcao_m * 100 if proporcao_m is not None else None)
+        })
+
+    df_salas = pd.DataFrame(dados_salas)
+
+    if df_salas.empty:
+        return {}, df_salas
+
+    resumo = {
+        "Média de alunos por sala":
+        df_salas["Nº de alunos"].mean(),
+        "Média de pares de amizade por sala":
+        df_salas["Pares de amizade"].mean(),
+        "Média de desempenho por sala":
+        df_salas["Média de desempenho"].mean(),
+        "Média de comportamento por sala":
+        df_salas["Média de comportamento"].mean(),
+        "Média de pares de inimizade por sala":
+        df_salas["Pares de inimizade"].mean(),
+        "Proporção média F (%)":
+        df_salas["Proporção F (%)"].mean(),
+        "Proporção média M (%)":
+        df_salas["Proporção M (%)"].mean()
+    }
+
+    return resumo, df_salas
+
+
+
     #Streamlit
 
 st.title("**Otimizador de salas escolares**")
@@ -832,7 +929,8 @@ if arquivo and st.button("Otimizar"):
     resultados = []
     historicos = []
     solucoes = []
-
+    indicadores_execucoes = []
+    
     salas, amizades, inimizades, dados_dict, IDs, id_para_nome = preparar_dados(
         arquivo,
         numero_salas
@@ -885,6 +983,15 @@ if arquivo and st.button("Otimizar"):
             resultados.append(score)
             historicos.append(df_historico)
             solucoes.append(solucao_final)
+            indicadores, _ = calcular_indicadores_solucao(
+                solucao_final,
+                amizades,
+                inimizades,
+                dados_dict
+            )
+
+indicadores_execucoes.append(indicadores)
+        
 
         if resultados:
 
@@ -908,6 +1015,46 @@ if arquivo and st.button("Otimizar"):
             melhor_historico = historicos[
                 melhor_indice
             ]
+            st.subheader("Indicadores da melhor solução")
+
+resumo_melhor, df_salas_melhor = calcular_indicadores_solucao(
+    melhor_solucao, amizades, inimizades, dados_dict)
+
+df_resumo_melhor = pd.DataFrame({
+    "Indicador": list(resumo_melhor.keys()),
+    "Valor": list(resumo_melhor.values())
+})
+
+df_resumo_melhor["Valor"] = df_resumo_melhor["Valor"].round(2)
+
+st.dataframe(df_resumo_melhor, use_container_width=True, hide_index=True)
+
+st.subheader("Indicadores por sala — melhor solução")
+
+st.dataframe(df_salas_melhor.round(2),
+             use_container_width=True,
+             hide_index=True)
+
+st.subheader("Estatísticas dos indicadores entre execuções")
+
+df_execucoes = pd.DataFrame(indicadores_execucoes)
+
+df_estatisticas = pd.DataFrame({
+    "Média entre execuções":
+    df_execucoes.mean(),
+    "Desvio-padrão entre execuções":
+    df_execucoes.std(ddof=1)
+})
+
+if len(df_execucoes) == 1:
+    df_estatisticas["Desvio-padrão entre execuções"] = 0.0
+
+df_estatisticas = df_estatisticas.round(2)
+
+st.dataframe(df_estatisticas.reset_index(names="Indicador"),
+             use_container_width=True,
+             hide_index=True)
+
 
             st.success(
                 f"{len(resultados)} execuções concluídas!"
