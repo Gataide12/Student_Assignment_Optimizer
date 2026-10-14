@@ -842,6 +842,7 @@ def calcular_indicadores_solucao(salas, amizades_id_map, inimizades_id_map,
     #Streamlit
 
 st.title("**Otimizador de salas escolares**")
+st.write("Versão do Streamlit:", st.__version__)
 st.write("Começe colocando um arquivo no formato CSV com as informações dos estudantes")
 arquivo = st.file_uploader("Coloque seu arquivo CSV aqui", type="csv")
 if arquivo is not None:
