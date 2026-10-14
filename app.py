@@ -993,7 +993,7 @@ if arquivo and st.button("Otimizar"):
 indicadores_execucoes.append(indicadores)
         
 
-        if resultados:
+    if resultados:
 
             import numpy as np
 
@@ -1017,43 +1017,43 @@ indicadores_execucoes.append(indicadores)
             ]
             st.subheader("Indicadores da melhor solução")
 
-resumo_melhor, df_salas_melhor = calcular_indicadores_solucao(
-    melhor_solucao, amizades, inimizades, dados_dict)
+            resumo_melhor, df_salas_melhor = calcular_indicadores_solucao(
+                melhor_solucao, amizades, inimizades, dados_dict)
 
-df_resumo_melhor = pd.DataFrame({
-    "Indicador": list(resumo_melhor.keys()),
-    "Valor": list(resumo_melhor.values())
-})
+            df_resumo_melhor = pd.DataFrame({
+                "Indicador": list(resumo_melhor.keys()),
+                "Valor": list(resumo_melhor.values())
+            })
 
-df_resumo_melhor["Valor"] = df_resumo_melhor["Valor"].round(2)
+            df_resumo_melhor["Valor"] = df_resumo_melhor["Valor"].round(2)
 
-st.dataframe(df_resumo_melhor, use_container_width=True, hide_index=True)
+            st.dataframe(df_resumo_melhor, use_container_width=True, hide_index=True)
 
-st.subheader("Indicadores por sala — melhor solução")
+            st.subheader("Indicadores por sala — melhor solução")
 
-st.dataframe(df_salas_melhor.round(2),
-             use_container_width=True,
-             hide_index=True)
+            st.dataframe(df_salas_melhor.round(2),
+                         use_container_width=True,
+                         hide_index=True)
 
-st.subheader("Estatísticas dos indicadores entre execuções")
+            st.subheader("Estatísticas dos indicadores entre execuções")
 
-df_execucoes = pd.DataFrame(indicadores_execucoes)
+            df_execucoes = pd.DataFrame(indicadores_execucoes)
 
-df_estatisticas = pd.DataFrame({
-    "Média entre execuções":
-    df_execucoes.mean(),
-    "Desvio-padrão entre execuções":
-    df_execucoes.std(ddof=1)
-})
+            df_estatisticas = pd.DataFrame({
+                "Média entre execuções":
+                df_execucoes.mean(),
+                "Desvio-padrão entre execuções":
+                df_execucoes.std(ddof=1)
+            })
 
-if len(df_execucoes) == 1:
-    df_estatisticas["Desvio-padrão entre execuções"] = 0.0
+            if len(df_execucoes) == 1:
+                df_estatisticas["Desvio-padrão entre execuções"] = 0.0
 
-df_estatisticas = df_estatisticas.round(2)
+            df_estatisticas = df_estatisticas.round(2)
 
-st.dataframe(df_estatisticas.reset_index(names="Indicador"),
-             use_container_width=True,
-             hide_index=True)
+            st.dataframe(df_estatisticas.reset_index(names="Indicador"),
+                         use_container_width=True,
+                         hide_index=True)
 
 
             st.success(
